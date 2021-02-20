@@ -24,6 +24,7 @@ class CustomDataLoader(Dataset):
     """
 
     def __init__(self, img_dir, label_dir, mask_dir, transform, transform_label):
+
         self.mask_dir = mask_dir
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -55,7 +56,6 @@ class CustomDataLoader(Dataset):
             label = label.resize((newW, newH))
             mask = mask.resize((newW, newH))
 
-
         label = np.asarray(label).astype(np.uint8)
         # size = (int(512), int(512))
         # label = cv2.resize(label, size, interpolation=cv2.INTER_LINEAR)
@@ -83,7 +83,6 @@ class CustomDataLoader(Dataset):
         return cl_img, label
 
     def __getitem__(self, idx):
-
         """ Generator to yield a tuple of image and label
         idx: the index to iterate over the dataset in directories of both
         images and labels
@@ -157,9 +156,9 @@ if __name__ == '__main__':
     train_loader = DataLoader(train, batch_size=15, shuffle=True, num_workers=0, pin_memory=True)
     val_loader = DataLoader(val, batch_size=3, shuffle=False, num_workers=0, pin_memory=True)
     img, label = next(iter(train_loader))
-    #img = np.asarray(np.squeeze(label[0]))
+    # img = np.asarray(np.squeeze(label[0]))
     print(np.unique(img))
-    img = np.squeeze(img[0].permute(1,2,0).numpy())
+    img = np.squeeze(img[0].permute(1, 2, 0).numpy())
     plt.imshow(img, cmap='gray')
     # plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     plt.show()
