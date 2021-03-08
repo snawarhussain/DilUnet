@@ -1,12 +1,14 @@
 import torch
+
+
 from main.utils.Data_loader import CustomDataLoader
 from torchvision import transforms as transforms
 from matplotlib import pyplot as plt
 import numpy as np
 # import U_netLWQ
 from torch.utils.data import DataLoader, random_split
-import U_net
-import  Unet_variant
+from Network.Unet_variant import UnetVariant
+
 img_dir = 'utils/DRIVE/training/images/img/'
 label_dir = 'utils/DRIVE/training/images/label/'
 mask_dir = 'utils/DRIVE/training/mask/'
@@ -31,18 +33,18 @@ dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform, transform_la
 n_val = int(len(dataset) * val_percent)
 n_train = int(len(dataset) - n_val)
 train, val = random_split(dataset, [n_train, n_val])
-train_loader = DataLoader(train, batch_size=2, shuffle=True, num_workers=0, pin_memory=True)
-val_loader = DataLoader(val, batch_size=2, shuffle=False, num_workers=0, pin_memory=True)
+train_loader = DataLoader(train, batch_size=2, shuffle=True, num_workers=0, pin_memory=False)
+val_loader = DataLoader(val, batch_size=2, shuffle=False, num_workers=0, pin_memory=False)
 
-img, label = next(iter(train_loader))
-img = img[0][0]
-plt.imshow(img, cmap='gray',
-           vmin=0, vmax=1,
-           interpolation='lanczos')
-plt.show()
+# img, label = next(iter(train_loader))
+# img = img[0][0]
+# plt.imshow(img, cmap='gray',
+#            vmin=0, vmax=1,
+#            interpolation='lanczos')
+# plt.show()
 
 
-model = Unet_variant.UnetVariant(1, 1)
+model = UnetVariant(1, 1)
 print(model)
 model.to(device)
 if train_on_gpu:
@@ -121,32 +123,33 @@ for e in range(no_epoch):
     train_loss_plot.append(train_loss)
     print('Epoch :{} \t Training_loss: {} \t Validation_loss: {}'.format(e + 1, train_loss, valid_loss))
     if valid_loss <= valid_loss_min:
-        print('validation loss has descreased from ({:.6f}-->{:.6f}. saving model .......'.format(valid_loss_min,
-                                                                                                  valid_loss))
+        print('validation loss has decreased from ({:.6f}-->{:.6f}. saving model .......'.format(valid_loss_min,
+                                                                                          valid_loss))
         torch.save(model.state_dict(), 'results/model_segmentation.pt')
         valid_loss_min = valid_loss
 
-np.save('results/trainlossarray', train_loss_plot)
+np.save('results/train_loss_array', train_loss_plot)
 np.save('results/validation_loss_array', val_loss_plot)
 np.save('results/stochastic_loss', train_loss_stochastic)
+model.to('cpu')
 torch.save(model.state_dict(), 'results/model_segmentation_last_epoch.pt')
-i = 0
-for img, lbl in val_loader:
-    img.to(device)
-    lbl.to(device)
-    prediction = model(img)
-    prediction = prediction.detach().numpy()
-
-    # logits = logits.detach().numpy()
-
-    print(prediction.shape)
-    prediction = prediction[0][0]
-    plt.imshow(prediction, cmap='bone',
-               vmin=0, vmax=1,
-               interpolation='lanczos')
-    plt.show()
-    plt.imsave('seg' + str(i) + '.jpg', prediction)
-    i = i + 1
+# i = 0
+# for img, lbl in val_loader:
+#     img.to(device)
+#     lbl.to(device)
+#     prediction = model(img)
+#     prediction = prediction.detach().numpy()
+#
+#     # logits = logits.detach().numpy()
+#
+#     print(prediction.shape)
+#     prediction = prediction[0][0]
+#     plt.imshow(prediction, cmap='bone',
+#                vmin=0, vmax=1,
+#                interpolation='lanczos')
+#     plt.show()
+#     plt.imsave('seg' + str(i) + '.jpg', prediction)
+#     i = i + 1
     # label = label.detach().numpy()
     # label = label[0][0]
 #
