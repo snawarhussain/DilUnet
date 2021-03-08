@@ -36,7 +36,7 @@ class DcBlock(nn.Module, ABC):
 
     def forward(self, X):
         output = self.dilated_block(X)
-        print(output.shape)
+       # print(output.shape)
         return output
 
 
@@ -78,10 +78,12 @@ class UnetVariant(nn.Module, ABC):
         X5 = self.DcBlock5(X5)
         # Decoder part
         X5 = self.ConvTrans1(X5)
+        X5 = nn.functional.interpolate(X5, X4.shape[2])
         X6 = torch.cat((X4, X5), dim=1)
         X6 = self.UpDcBlock1(X6)
 
         X6 = self.ConvTrans2(X6)
+        X6 = nn.functional.interpolate(X6, X3.shape[2])
         X7 = torch.cat((X3, X6), dim=1)
         X7 = self.UpDcBlock2(X7)
 
@@ -99,8 +101,8 @@ class UnetVariant(nn.Module, ABC):
         return X9
 
 
-if __name__ == "__main__":
-    x = torch.randn((1, 3, 572, 572))
-    model = UnetVariant(3, 1)
-    print(model)
-    print(model(x).shape)
+# if __name__ == "__main__":
+#     x = torch.randn((1, 3, 572, 572))
+#     model = UnetVariant(3, 1)
+#     print(model)
+#     print(model(x).shape)

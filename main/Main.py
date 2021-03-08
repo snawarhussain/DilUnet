@@ -6,9 +6,10 @@ import numpy as np
 # import U_netLWQ
 from torch.utils.data import DataLoader, random_split
 import U_net
-
-img_dir = 'DRIVE/training/images/img/'
-label_dir = 'DRIVE/training/images/label/'
+import  Unet_variant
+img_dir = 'utils/DRIVE/training/images/img/'
+label_dir = 'utils/DRIVE/training/images/label/'
+mask_dir = 'utils/DRIVE/training/mask/'
 val_percent = 0.2
 batch_size = 1
 width_out = 420
@@ -18,32 +19,31 @@ if not train_on_gpu:
     print('CUDA is not available..... training on CPU')
 else:
     print("CUDA is available..... training on GPU")
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-transform = transforms.Compose([transforms.Resize((512, 512)),
-                                transforms.CenterCrop(508),
-                                transforms.ToTensor()])
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+transform = transforms.Compose([
+    transforms.ToTensor()])
 
 transform_label = transforms.Compose([
 
     transforms.ToTensor()])
 
-dataset = CustomDataLoader(img_dir, label_dir, transform, transform_label)
+dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform, transform_label)
 n_val = int(len(dataset) * val_percent)
 n_train = int(len(dataset) - n_val)
 train, val = random_split(dataset, [n_train, n_val])
-train_loader = DataLoader(train, batch_size=3, shuffle=True, num_workers=0, pin_memory=True)
-val_loader = DataLoader(val, batch_size=3, shuffle=False, num_workers=0, pin_memory=True)
+train_loader = DataLoader(train, batch_size=2, shuffle=True, num_workers=0, pin_memory=True)
+val_loader = DataLoader(val, batch_size=2, shuffle=False, num_workers=0, pin_memory=True)
 
-# img, label = next(iter(train_loader))
-# img = label[0][0]
-# plt.imshow(img, cmap='gray',
-#            vmin=0, vmax=1,
-#            interpolation='lanczos')
-# plt.show()
+img, label = next(iter(train_loader))
+img = img[0][0]
+plt.imshow(img, cmap='gray',
+           vmin=0, vmax=1,
+           interpolation='lanczos')
+plt.show()
 
 
-model = U_net.UNet()
-
+model = Unet_variant.UnetVariant(1, 1)
+print(model)
 model.to(device)
 if train_on_gpu:
     print('Transferring model to GPU.....')
@@ -123,13 +123,13 @@ for e in range(no_epoch):
     if valid_loss <= valid_loss_min:
         print('validation loss has descreased from ({:.6f}-->{:.6f}. saving model .......'.format(valid_loss_min,
                                                                                                   valid_loss))
-        torch.save(model.state_dict(), 'model_segmentation.pt')
+        torch.save(model.state_dict(), 'results/model_segmentation.pt')
         valid_loss_min = valid_loss
 
-np.save('trainlossarray', train_loss_plot)
-np.save('validation_loss_array', val_loss_plot)
-np.save('stochastic_loss', train_loss_stochastic)
-torch.save(model.state_dict(), 'model_segmentation_last_epoch.pt')
+np.save('results/trainlossarray', train_loss_plot)
+np.save('results/validation_loss_array', val_loss_plot)
+np.save('results/stochastic_loss', train_loss_stochastic)
+torch.save(model.state_dict(), 'results/model_segmentation_last_epoch.pt')
 i = 0
 for img, lbl in val_loader:
     img.to(device)
@@ -149,8 +149,6 @@ for img, lbl in val_loader:
     i = i + 1
     # label = label.detach().numpy()
     # label = label[0][0]
-
+#
 # if __name__ =='__main__':
-#     train_loss_plot =  np.load('trainlossarray.npy')
-#     valid_loss_plot = np.load('validation_loss_array.npy')
-#     plt.
+#

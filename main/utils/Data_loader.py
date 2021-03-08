@@ -48,9 +48,9 @@ class CustomDataLoader(Dataset):
         as well as before making predictions
         dataset class dishes out pre-processed bathes of images and labels """
         w, h = image[:, :, 0].shape
-        if scale is not None:
+        if scale is not None and w!= h:
             newW = int(scale * w)
-            newH = int(scale * h)
+            newH = int(scale * w)
             assert newW > 0 and newH > 0, 'Scale is too small'
             image = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
             label = label.resize((newW, newH))
@@ -76,7 +76,7 @@ class CustomDataLoader(Dataset):
         # cv2.imshow('hybird', hybrid_channel)
         # cv2.imshow('green', masked_out[:, :, 1])
         # cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         cl_img = clahe.apply(hybrid_channel)
 
