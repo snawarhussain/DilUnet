@@ -45,6 +45,7 @@ class UnetVariant(nn.Module, ABC):
         super(UnetVariant, self).__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
+        self.dropout = nn.Dropout2d(0.1)
         self.DcBlock1 = DcBlock(input_channels, 16, 32)
         self.skipPath1 = SkipConnection01(32, 32)
 
@@ -77,38 +78,47 @@ class UnetVariant(nn.Module, ABC):
 
     def forward(self, X):
         X1 = self.DcBlock1(X)
+        X1 = self.dropout(X1)
         X2 = nn.functional.max_pool2d(X1, kernel_size=2, stride=2)
         X2 = self.DcBlock2(X2)
+        X2 = self.dropout(X2)
         X3 = nn.functional.max_pool2d(X2, kernel_size=2, stride=2)
         X3 = self.DcBlock3(X3)
+        X3 = self.dropout(X3)
         X4 = nn.functional.max_pool2d(X3, kernel_size=2, stride=2)
         X4 = self.DcBlock4(X4)
+        X4 = self.dropout(X4)
         X5 = nn.functional.max_pool2d(X4, kernel_size=2, stride=2)
         X5 = self.DcBlock5(X5)
+        X5 = self.dropout(X5)
         # Decoder part
         X5 = self.ConvTrans1(X5)
         X5 = nn.functional.interpolate(X5, X4.shape[2])
         X4 = self.skipPath4(X4)
         X6 = torch.cat((X4, X5), dim=1)
         X6 = self.UpDcBlock1(X6)
+        X6 = self.dropout(X6)
 
         X6 = self.ConvTrans2(X6)
         X6 = nn.functional.interpolate(X6, X3.shape[2])
         X3 = self.skipPath3(X3)
         X7 = torch.cat((X3, X6), dim=1)
         X7 = self.UpDcBlock2(X7)
+        X7 = self.dropout(X7)
 
         X7 = self.ConvTrans3(X7)
         X7 = nn.functional.interpolate(X7,X2.shape[2])
         X2 = self.skipPath2(X2)
         X8 = torch.cat((X2, X7), dim=1)
         X8 = self.UpDcBlock3(X8)
+        X8 = self.dropout(X8)
 
         X8 = self.ConvTrans4(X8)
         X8 = nn.functional.interpolate(X8,X1.shape[2])
         X1 = self.skipPath1(X1)
         X9 = torch.cat((X1, X8), dim=1)
         X9 = self.UpDcBlock4(X9)
+        X9 = self.dropout(X9)
 
         X9 = self.sig(self.output(X9))
         return X9

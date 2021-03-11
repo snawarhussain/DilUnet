@@ -11,7 +11,7 @@ model_state_dict = torch.load('results/model_segmentation_last_epoch.pt',
 print(model_state_dict.keys())
 model = Unet_variant.UnetVariant(1, 1)
 model.load_state_dict(model_state_dict)
-
+model.eval()
 img_dir = 'utils/DRIVE/training/images/img/'
 label_dir = 'utils/DRIVE/training/images/label/'
 mask_dir = 'utils/DRIVE/training/mask/'
@@ -51,8 +51,8 @@ print(prediction.shape)
 prediction = prediction[0][0]
 lbl = lbl[0][0]
 prediction = (np.array(prediction) * 255).astype(np.uint8)
-ret, prediction = cv2.threshold(prediction, 20, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-plt.imshow(prediction, cmap='gray')
+ret, prediction = cv2.threshold(prediction, 90, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+plt.imshow(prediction, cmap= 'gray')
 
 plt.show()
 plt.imshow(lbl, cmap='gray')

@@ -1,14 +1,18 @@
-import torch
+
+
+
+
+import numpy as np
+from torchvision import transforms as transforms
+from torch.utils.data import DataLoader, random_split
 from torch.utils.data import Dataset
 import os
 import natsort
 from PIL import Image
-import cv2
-import numpy as np
-from torchvision import transforms as transforms
-from torch.utils.data import DataLoader, random_split
-from matplotlib import pyplot as plt
 
+import numpy as np
+
+import cv2
 
 class CustomDataLoader(Dataset):
     """the class for loading the dataset from the directories
@@ -24,6 +28,7 @@ class CustomDataLoader(Dataset):
     """
 
     def __init__(self, img_dir, label_dir, mask_dir, transform, transform_label):
+
 
         self.mask_dir = mask_dir
         self.img_dir = img_dir
@@ -53,10 +58,11 @@ class CustomDataLoader(Dataset):
             newH = int(scale * w)
             assert newW > 0 and newH > 0, 'Scale is too small'
             image = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
-            label = label.resize((newW, newH))
+            label = np.asarray(label).astype(np.uint8)
+            label = cv2.resize(label, (newW, newH), interpolation=cv2.INTER_LINEAR)
             mask = mask.resize((newW, newH))
 
-        label = np.asarray(label).astype(np.uint8)
+
         # size = (int(512), int(512))
         # label = cv2.resize(label, size, interpolation=cv2.INTER_LINEAR)
         # label = cv2.cvtColor(label, cv2.COLOR_RGB2GRAY)
@@ -78,7 +84,11 @@ class CustomDataLoader(Dataset):
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
         cl_img = clahe.apply(hybrid_channel)
+        # cv2.imshow('clahe', cl_img)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
         return cl_img, label
 
@@ -106,8 +116,11 @@ class CustomDataLoader(Dataset):
         image = cv2.imread(img_loc)
         mask = Image.open(mask_loc)
 
+
         # image = image.resize((512, 512), Image.ANTIALIAS)
         label = Image.open(label_loc)  # opening image and converting it to the grey scale
+
+
         # label = np.asarray(label).astype(np.uint8)
         # size = (int(512), int(512))
         # # label = cv2.resize(label, size, interpolation=cv2.INTER_LINEAR)
@@ -118,47 +131,74 @@ class CustomDataLoader(Dataset):
         # #   cv2.THRESH_BINARY,11,2)
         # # label = np.expand_dims(np.array(label, np.float32), -1)
         # # label = label / 255.
-        image, label = self.preprocessing(image, label, mask, scale=1)
 
-        label = self.transform_label(label)
-        image = self.transform(image)
+        image, label = self.preprocessing(image, label, mask, scale=1)
+        label = np.asarray(label).astype(np.uint8)
+        """ Albumentations test steps 
+
+
+        """
+        # aug = A.Compose([
+        #     A.VerticalFlip(p=0.5),
+        #     A.RandomRotate90(p=0.5),
+        #     A.OneOf([A.ElasticTransform(p=0.5, alpha=90, sigma=120 * 0.05, alpha_affine=45 * 0.03),
+        #     A.GridDistortion(p=0.5)], p=0.6),
+        #     A.CLAHE(p=0.5),
+        #     A.RandomBrightnessContrast(p=0.6),
+        #     A.RandomGamma(p=0.6),
+        #     A.Normalize(mean=0.485, std=0.229)
+        # ]
+        # )
+
+        augmented = self.transform(image=image, mask=label)
+
+        image_transformed = augmented['image']
+        mask_transformed = augmented['mask']
+
+        '''===================over ========================='''
+
+        #label = Image.fromarray(label)
+        label = self.transform_label(mask_transformed)
+        #
+        image = self.transform_label(image_transformed)
 
         #
 
         return image, label
 
 
-if __name__ == '__main__':
-    img_dir = 'DRIVE/training/images/img/'
-    label_dir = 'DRIVE/training/images/label/'
-    mask_dir = 'DRIVE/training/mask/'
-    val_percent = 0.2
-    batch_size = 1
-    width_out = 420
-    height_out = 420
-    train_on_gpu = torch.cuda.is_available()
-    if not train_on_gpu:
-        print('CUDA is not available..... training on CPU')
-    else:
-        print("CUDA is available..... training on GPU")
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-    transform = transforms.Compose([
-        transforms.ToTensor()])
-
-    transform_label = transforms.Compose([
-
-        transforms.ToTensor()])
-
-    dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform, transform_label)
-    n_val = int(len(dataset) * val_percent)
-    n_train = int(len(dataset) - n_val)
-    train, val = random_split(dataset, [n_train, n_val])
-    train_loader = DataLoader(train, batch_size=15, shuffle=True, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=3, shuffle=False, num_workers=0, pin_memory=True)
-    img, label = next(iter(train_loader))
-    # img = np.asarray(np.squeeze(label[0]))
-    print(np.unique(img))
-    img = np.squeeze(img[0].permute(1, 2, 0).numpy())
-    plt.imshow(img, cmap='gray')
-    # plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    plt.show()
+# if __name__ == '__main__':
+#     img_dir = 'DRIVE/training/images/img/'
+#     label_dir = 'DRIVE/training/images/label/'
+#     mask_dir = 'DRIVE/training/mask/'
+#     val_percent = 0.2
+#     batch_size = 1
+#     width_out = 420
+#     height_out = 420
+#     train_on_gpu = torch.cuda.is_available()
+#     if not train_on_gpu:
+#         print('CUDA is not available..... training on CPU')
+#     else:
+#         print("CUDA is available..... training on GPU")
+#     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+#     transform = transforms.Compose([
+#         transforms.ToTensor()])
+#     #
+#     # transforms.RandomRotation(45),
+#     # transforms.RandomHorizontalFlip(),
+#     transform_label = transforms.Compose([
+#                                           transforms.ToTensor()
+#                                           ])
+#
+#     dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform, transform_label)
+#     n_val = int(len(dataset) * val_percent)
+#     n_train = int(len(dataset) - n_val)
+#     train, val = random_split(dataset, [n_train, n_val])
+#     train_loader = DataLoader(train, batch_size=10, shuffle=True, num_workers=0, pin_memory=True)
+#     val_loader = DataLoader(val, batch_size=3, shuffle=False, num_workers=0, pin_memory=True)
+#     # img = np.asarray(np.squeeze(label[0]))
+#
+#     for img, label in (iter(train_loader)):
+#         img = np.squeeze(img[0].permute(1, 2, 0).numpy())
+#         label = np.squeeze(label[0].permute(1, 2, 0).numpy())
+#         visualize(img,label)
