@@ -14,7 +14,7 @@ def crop(tensor, target_tensor):
 
 
 class DcBlock(nn.Module, ABC):
-    def __init__(self, in_c, interm_c, out_c):
+    def __init__(self, in_c, interm_c, out_c, activation = None):
         super(DcBlock, self).__init__()
         self.in_c = in_c
         self.interm_c = interm_c
@@ -33,6 +33,37 @@ class DcBlock(nn.Module, ABC):
             nn.ReLU(inplace=True)
 
         )
+
+
+
+    def forward(self, X):
+        output = self.dilated_block(X)
+       # print(output.shape)
+        return output
+
+class DcBlockLast(nn.Module, ABC):
+    def __init__(self, in_c, interm_c, out_c):
+        super(DcBlockLast, self).__init__()
+        self.in_c = in_c
+        self.interm_c = interm_c
+        self.out_c = out_c
+        self.dilated_block = nn.Sequential(
+            nn.Conv2d(in_channels=self.in_c, out_channels=self.interm_c, kernel_size=3,
+                      stride=1, padding=3, dilation=3),
+            nn.BatchNorm2d(num_features=self.interm_c),
+            #nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=self.interm_c, out_channels=self.out_c, kernel_size=3,
+                      stride=1, padding=2, dilation=2),
+            nn.BatchNorm2d(num_features=self.out_c),
+            #nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=self.out_c, out_channels=self.out_c, kernel_size=3,
+                      stride=1, padding=1, dilation=1),
+            #nn.ReLU(inplace=True)
+            nn.BatchNorm2d(num_features=self.out_c)
+
+        )
+
+
 
     def forward(self, X):
         output = self.dilated_block(X)
@@ -71,55 +102,55 @@ class UnetVariant(nn.Module, ABC):
         self.UpDcBlock3 = DcBlock(192, 96, 64)
 
         self.ConvTrans4 = nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, )
-        self.UpDcBlock4 = DcBlock(2*64, 48, 32)
+        self.UpDcBlock4 = DcBlockLast(2*64, 48, 32)
 
         self.output = nn.ConvTranspose2d(32, out_channels=self.output_channels, kernel_size=1)
         self.sig = nn.Sigmoid()
 
     def forward(self, X):
         X1 = self.DcBlock1(X)
-        X1 = self.dropout(X1)
+        #X1 = self.dropout(X1)
         X2 = nn.functional.max_pool2d(X1, kernel_size=2, stride=2)
         X2 = self.DcBlock2(X2)
-        X2 = self.dropout(X2)
+        #X2 = self.dropout(X2)
         X3 = nn.functional.max_pool2d(X2, kernel_size=2, stride=2)
         X3 = self.DcBlock3(X3)
-        X3 = self.dropout(X3)
+        #X3 = self.dropout(X3)
         X4 = nn.functional.max_pool2d(X3, kernel_size=2, stride=2)
         X4 = self.DcBlock4(X4)
-        X4 = self.dropout(X4)
+        #X4 = self.dropout(X4)
         X5 = nn.functional.max_pool2d(X4, kernel_size=2, stride=2)
         X5 = self.DcBlock5(X5)
-        X5 = self.dropout(X5)
+        #X5 = self.dropout(X5)
         # Decoder part
         X5 = self.ConvTrans1(X5)
         X5 = nn.functional.interpolate(X5, X4.shape[2])
         X4 = self.skipPath4(X4)
         X6 = torch.cat((X4, X5), dim=1)
         X6 = self.UpDcBlock1(X6)
-        X6 = self.dropout(X6)
+        #X6 = self.dropout(X6)
 
         X6 = self.ConvTrans2(X6)
         X6 = nn.functional.interpolate(X6, X3.shape[2])
         X3 = self.skipPath3(X3)
         X7 = torch.cat((X3, X6), dim=1)
         X7 = self.UpDcBlock2(X7)
-        X7 = self.dropout(X7)
+        #X7 = self.dropout(X7)
 
         X7 = self.ConvTrans3(X7)
         X7 = nn.functional.interpolate(X7,X2.shape[2])
         X2 = self.skipPath2(X2)
         X8 = torch.cat((X2, X7), dim=1)
         X8 = self.UpDcBlock3(X8)
-        X8 = self.dropout(X8)
+        #X8 = self.dropout(X8)
 
         X8 = self.ConvTrans4(X8)
         X8 = nn.functional.interpolate(X8,X1.shape[2])
         X1 = self.skipPath1(X1)
         X9 = torch.cat((X1, X8), dim=1)
         X9 = self.UpDcBlock4(X9)
-        X9 = self.dropout(X9)
-
+        #X9 = self.dropout(X9)
+        #X9 = self.output(X9)
         X9 = self.sig(self.output(X9))
         return X9
 

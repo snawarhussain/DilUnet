@@ -1,16 +1,16 @@
 import torch
 
-
-from main.utils.Data_loader import CustomDataLoader
+from utils.Data_loader import CustomDataLoader
 from torchvision import transforms as transforms
 from matplotlib import pyplot as plt
 import numpy as np
 # import U_netLWQ
 from torch.utils.data import DataLoader, random_split
 from Network.Unet_variant import UnetVariant
-from main.utils.tem import visualize
+from utils.tem import visualize
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+
 img_dir = 'utils/DRIVE/training/images/img/'
 label_dir = 'utils/DRIVE/training/images/label/'
 mask_dir = 'utils/DRIVE/training/mask/'
@@ -25,30 +25,35 @@ else:
     print("CUDA is available..... training on GPU")
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 transform = A.Compose([
-            A.VerticalFlip(p=0.5),
-            A.RandomRotate90(p=0.5),
-            A.OneOf([A.ElasticTransform(p=0.5, alpha=90, sigma=120 * 0.05, alpha_affine=45 * 0.03),
-            A.GridDistortion(p=0.5)], p=0.6),
-            A.CLAHE(p=0.5),
-            A.RandomBrightnessContrast(p=0.6),
-            A.RandomGamma(p=0.6),
-            A.Normalize(mean=0.485, std=0.229)
-        ])
+    A.HorizontalFlip(p=0.3),
+    A.VerticalFlip(p=0.3),
+    A.RandomRotate90(p=0.3),
+    # A.OneOf([A.ElasticTransform(p=0.2, alpha=90, sigma=120 * 0.05, alpha_affine=45 * 0.03),
+    #          A.GridDistortion(p=0.2)], p=0.2),
+    A.CLAHE(p=0.25),
+    A.RandomBrightnessContrast(p=0.25),
+    A.RandomGamma(p=0.25),
+    # A.Normalize(mean=0.485, std=0.229)
+])
 
 transform_label = transforms.Compose([transforms.ToTensor()
-                                      ] )
+                                      ])
 
-dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform, transform_label=transform_label)
+dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform,
+                           transform_label=transform_label, image_scale=0.5)
 n_val = int(len(dataset) * val_percent)
 n_train = int(len(dataset) - n_val)
 train, val = random_split(dataset, [n_train, n_val])
-train_loader = DataLoader(train, batch_size=4, shuffle=True, num_workers=0, pin_memory=False)
-val_loader = DataLoader(val, batch_size=2, shuffle=False, num_workers=0, pin_memory=False)
+train_loader = DataLoader(train, batch_size=8, shuffle=True, num_workers=0, pin_memory=False)
+val_loader = DataLoader(val, batch_size=4, shuffle=False, num_workers=0, pin_memory=False)
 
-for img, label in (iter(train_loader)):
-    img = np.squeeze(img[0].permute(1, 2, 0).numpy())
-    label = np.squeeze(label[0].permute(1, 2, 0).numpy())
-    visualize(img, label)
+# for img, label in (train_loader):
+#     #img = img.detach().numpy()
+#     n,c,h,w =(img.shape)
+#     for i in range(n):
+#         im = np.squeeze(img[i, :, :, :].numpy())
+#         la = np.squeeze(label[i, :, :, :].numpy())
+#         visualize(im, la)
 
 
 model = UnetVariant(1, 1)
@@ -68,10 +73,10 @@ def soft_dice_loss(inputs, targets):
     return score
 
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=40, verbose=True)
 
-no_epoch = 150
+no_epoch = 250
 valid_loss_min = np.inf
 val_loss_plot = []
 train_loss_plot = []
@@ -131,7 +136,7 @@ for e in range(no_epoch):
     print('Epoch :{} \t Training_loss: {} \t Validation_loss: {}'.format(e + 1, train_loss, valid_loss))
     if valid_loss <= valid_loss_min:
         print('validation loss has decreased from ({:.6f}-->{:.6f}. saving model .......'.format(valid_loss_min,
-                                                                                          valid_loss))
+                                                                                                 valid_loss))
         torch.save(model.state_dict(), 'results/model_segmentation.pt')
         valid_loss_min = valid_loss
 
@@ -157,8 +162,8 @@ torch.save(model.state_dict(), 'results/model_segmentation_last_epoch.pt')
 #     plt.show()
 #     plt.imsave('seg' + str(i) + '.jpg', prediction)
 #     i = i + 1
-    # label = label.detach().numpy()
-    # label = label[0][0]
+# label = label.detach().numpy()
+# label = label[0][0]
 #
 # if __name__ =='__main__':
 #

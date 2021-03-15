@@ -27,9 +27,9 @@ class CustomDataLoader(Dataset):
         transform_label: transforms applied to the labels of dataset
     """
 
-    def __init__(self, img_dir, label_dir, mask_dir, transform, transform_label):
+    def __init__(self, img_dir, label_dir, mask_dir, transform, transform_label, image_scale = None):
 
-
+        self.image_scale = image_scale
         self.mask_dir = mask_dir
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -132,7 +132,7 @@ class CustomDataLoader(Dataset):
         # # label = np.expand_dims(np.array(label, np.float32), -1)
         # # label = label / 255.
 
-        image, label = self.preprocessing(image, label, mask, scale=1)
+        image, label = self.preprocessing(image, label, mask, scale=self.image_scale)
         label = np.asarray(label).astype(np.uint8)
         """ Albumentations test steps 
 
