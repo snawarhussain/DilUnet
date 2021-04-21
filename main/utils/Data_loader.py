@@ -1,8 +1,5 @@
 
 
-
-
-import numpy as np
 from torchvision import transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from torch.utils.data import Dataset
@@ -52,13 +49,18 @@ class CustomDataLoader(Dataset):
         usage: preprocessing the images before feeding to the network for training
         as well as before making predictions
         dataset class dishes out pre-processed bathes of images and labels """
+        # label = np.asarray(label).astype(np.uint8)
+        # #label = label*255
+        # ret, label = cv2.threshold(label, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         w, h = image[:, :, 0].shape
         if scale is not None and w!= h:
             newW = int(scale * w)
             newH = int(scale * w)
             assert newW > 0 and newH > 0, 'Scale is too small'
             image = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
-            label = np.asarray(label).astype(np.uint8)
+            label = np.array(label)
+            if np.amax(label) == 1:
+                label = label*255
             label = cv2.resize(label, (newW, newH), interpolation=cv2.INTER_LINEAR)
             mask = mask.resize((newW, newH))
 
@@ -66,10 +68,12 @@ class CustomDataLoader(Dataset):
         # size = (int(512), int(512))
         # label = cv2.resize(label, size, interpolation=cv2.INTER_LINEAR)
         # label = cv2.cvtColor(label, cv2.COLOR_RGB2GRAY)
-        ret, label = cv2.threshold(label, 80, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # label = label*255
+
+        ret, label = cv2.threshold(label, 20, 255, cv2.THRESH_BINARY )
         # label = np.expand_dims(np.array(label, np.float32), -1)
-        # label = label / 255.
-        label = Image.fromarray(label)
+        #label = label / 255.
+        label = Image.fromarray(np.uint8(label))
 
         mask = np.array(mask).astype(np.uint8)
         mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
@@ -78,19 +82,30 @@ class CustomDataLoader(Dataset):
         # cv2.imshow('orignial', image)
         # cv2.imshow('mask_out', masked_out)
 
-        hybrid_channel = cv2.addWeighted(masked_out[:, :, 2], 0.2, masked_out[:, :, 1], 0.8, 0)
+        #hybrid_channel = cv2.addWeighted(masked_out[:, :, 2], 0.2, masked_out[:, :, 1], 0.8, 0)
+        hybrid_channel = cv2.cvtColor(masked_out, cv2.COLOR_BGR2GRAY)
         # cv2.imshow('hybird', hybrid_channel)
         # cv2.imshow('green', masked_out[:, :, 1])
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
-        cl_img = clahe.apply(hybrid_channel)
-        # cv2.imshow('clahe', cl_img)
+        gray = cv2.cvtColor(masked_out, cv2.COLOR_BGR2GRAY)
+        # cl1 = clahe.apply(gray)
+        lookUpTable = np.empty((1, 256), np.uint8)
+        gamma = 1.4
+        for i in range(256):
+            lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+        res = cv2.LUT(gray, lookUpTable)
+        cl1 = clahe.apply(res)
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+        cl1 = cv2.subtract(mask, cl1)
+        cl1 = cv2.subtract(mask, cl1)
+
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 
-        return cl_img, label
+        return cl1, label
 
     def __getitem__(self, idx):
         """ Generator to yield a tuple of image and label

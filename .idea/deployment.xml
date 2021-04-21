@@ -1,18 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="hsy@192.168.1.39:22 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="hsy@192.168.1.152:22 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="HuShanYi">
+      <paths name="hsy">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/hsy" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/data/hsy/Segmentation" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="hsy@192.168.1.39:22 password">
+      <paths name="hsy1">
         <serverdata>
           <mappings>
-            <mapping deploy="/Segmentation" local="$PROJECT_DIR$" />
+            <mapping deploy="/data/hsy/Segmentation" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (10)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (2)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (4)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (5)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (6)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (7)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (8)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hsy@192.168.1.152:22 password (9)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_177" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
