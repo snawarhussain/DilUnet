@@ -1,0 +1,9 @@
+model does overfit with no dropout and no augmentation
+that means the model code is working fine and there's no problem with it 
+
+to get the validation loss to decrease need to try dififerent things
+
+
+when aug and dropout is on the model training loss saturates
+
+tried removing activations from last conv DCblock

@@ -1,6 +1,9 @@
+import os
+import pickle
+
 import torch
 import cv2
-
+from PIL import Image
 from main.Network.Unet_variant_1 import UnetVariant_1
 from main.evaluate import getIOU, get_roc_curve, roc_auc_score, getAcc
 from main.utils.DataLoaderNoMask import CustomDataLoaderNoMask
@@ -12,23 +15,38 @@ from Network import Unet_variant
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 import albumentations as A
+from main.Network.U_net import UNet
 
+def soft_dice_cof(inputs, targets):
+    num = 1
+    m1 = inputs.ravel()
+    m2 = targets.ravel()
+    intersection = (m1 * m2)
+    score = 2. * (intersection.sum() + 1) / (m1.sum() + m2.sum() + 1)
+    score = score.sum() / num
+    return score
 from sklearn.metrics import jaccard_score as js
-model_state_dict = torch.load('results/model_segmentation_last_epoch.pt'
+model_state_dict = torch.load('results/model_segmentation.pt'
                               , map_location=torch.device('cpu')
                               )
 print(model_state_dict.keys())
-model = UnetVariant_1(1, 1)
+#model = UnetVariant_1(1,1)
+model = UNet(1, 1)
 model.load_state_dict(model_state_dict)
 
 
-folder = 'test'
-img_dir = 'utils/DRIVE/'+folder+'/images/img/'
-label_dir = 'utils/DRIVE/'+folder+'/images/2nd_manual/'
-mask_dir = 'utils/DRIVE/'+folder+'/mask/'
+# folder = 'test'
+# img_dir = 'utils/DRIVE/'+folder+'/images/img/'
+# label_dir = 'utils/DRIVE/'+folder+'/images/2nd_manual/'
+# mask_dir = 'utils/DRIVE/'+folder+'/mask/'
+#
+img_dir = 'utils/CHASEDB1/test/img/'
+label_dir = 'utils/CHASEDB1/test/1st_manual/'
+#
+# img_dir = 'utils/STARE/test/img/'
+# label_dir = 'utils/STARE/test/labels-ah/'
 
-# img_dir = 'utils/CHASEDB1/train/img/'
-# label_dir = 'utils/CHASEDB1/train/1st_manual/'
+img_list = os.listdir(img_dir)
 val_percent = 0.2
 batch_size = 1
 width_out = 420
@@ -38,7 +56,7 @@ if not train_on_gpu:
     print('CUDA is not available..... training on CPU')
 else:
     print("CUDA is available..... training on GPU")
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
 #model.to(device)
 transform = A.Compose([
             # A.VerticalFlip(p=0.5),
@@ -54,7 +72,7 @@ transform = A.Compose([
 transform_label = transforms.Compose([transforms.ToTensor()
                                       ])
 
-dataset = CustomDataLoader(img_dir, label_dir, mask_dir,
+dataset = CustomDataLoaderNoMask(img_dir, label_dir,
                            transform, transform_label, image_scale=.5)
 n_val = int(len(dataset) * val_percent)
 n_train = int(len(dataset) - n_val)
@@ -73,6 +91,8 @@ whole_sensitivity=[]
 whole_specificity=[]
 Mes = []
 Ori = []
+Dice = []
+j= 0
 with torch.no_grad():
     for images, labels in (data_loader):
         model.eval()
@@ -93,7 +113,7 @@ with torch.no_grad():
             #ret, im = cv2.threshold(im, 0, 255, cv2.THRESH_TOZERO+cv2.THRESH_OTSU)
 
 
-            ret, im_binarized = cv2.threshold(im, 45, 255, cv2.THRESH_BINARY)
+            ret, im_binarized = cv2.threshold(im, 20, 255, cv2.THRESH_BINARY)
             # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 1))
             # im_binarized = cv2.morphologyEx(im_binarized, cv2.MORPH_ERODE, kernel)
             la = np.squeeze(labels[i, :, :, :])
@@ -101,20 +121,26 @@ with torch.no_grad():
             im = im/255.
 
             im_binarized = im_binarized/255
-            visualize(im_binarized , la)
+            visualize(im, la)
             auc = roc_auc_score(la.ravel(), im.ravel(), average='weighted')
             print('auc=', auc)
             # cv2.imwrite("pred/pred_{}.jpg".format(code), Predimage*255)
             # Predimage.save("pred/pred_{}.jpg".format(code))
             IOU = getIOU(im, la)
             Acc, sensitivity, specificity = getAcc(im_binarized, la)
+            dice = soft_dice_cof(im, la)
+            print('dice=', dice)
+            print('IOU=', IOU)
             print('Acc=', Acc)
             print('sensitivity=', sensitivity)
             print('specificity=', specificity)
             la_flat = la.reshape(-1)
             im_flat = im_binarized.reshape(-1)
+            im_binarized = Image.fromarray(np.uint8(im_binarized*255))
+            im_binarized.save('prediction'+str(j)+'.jpg')
+            j = j+1
             #print('IoU =', js(la_flat,im_flat))
-
+        Dice.append(dice)
         Ori.append(la)
         Mes.append(im)
         AUC.append(auc)
@@ -123,7 +149,7 @@ with torch.no_grad():
         whole_sensitivity.append(sensitivity)
         whole_specificity.append(specificity)
     auc = roc_auc_score(np.array(Ori).ravel(), np.array(Mes).ravel(), average='weighted')
-    get_roc_curve(np.array(Ori).ravel(), np.array(Mes).ravel(), average='macro')
+    get_roc_curve(np.array(Ori).ravel(), np.array(Mes).ravel(), average='weighted')
 
     import scipy.io
     num = len(data_loader)
@@ -133,12 +159,22 @@ with torch.no_grad():
     mean_Acc = sum(whole_Acc) / num
     mean_sensitivity = sum(whole_sensitivity) / num
     mean_specificity = sum(whole_specificity) / num
+    mean_Dice = sum(Dice)/num
+    Dict = {'Images': img_list,
+            'Accuracy': whole_Acc,
+            'Specitivity': whole_specificity,
+            'Sensitivity': whole_sensitivity,
+            'IOU': whole_IOU,
+            'AUC': AUC,
+            'Dice': Dice}
     print('mean_IOU', mean_IOU)
     print('mean_Acc', mean_Acc)
     print('mean_sensitivity', mean_sensitivity)
     print('mean_specificity', mean_specificity)
     print('mean_AUC', mean_AUC)
-
+    print('mean_Dice', mean_Dice)
+    with open('results.pkl', 'wb') as f:
+        pickle.dump(Dict, f, pickle.HIGHEST_PROTOCOL)
 
 
 # logits = logits.detach().numpy()

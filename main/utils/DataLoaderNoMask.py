@@ -58,8 +58,8 @@ class CustomDataLoaderNoMask(Dataset):
         # ret, label = cv2.threshold(label, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         w, h = image[:, :, 0].shape
         if scale is not None and w != h:
-            newW = int(scale * h)
-            newH = int(scale * h)
+            newW = int(512)
+            newH = int(512)
             assert newW > 0 and newH > 0, 'Scale is too small'
             image = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
             label = np.array(label, np.uint8)
@@ -86,20 +86,20 @@ class CustomDataLoaderNoMask(Dataset):
         # cv2.imshow('orignial', image)
         # cv2.imshow('mask_out', masked_out)
 
-        hybrid_channel = cv2.addWeighted(masked_out[:, :, 2], 0.2, masked_out[:, :, 1], 0.8, 0)
+        hybrid_channel = cv2.cvtColor(masked_out, cv2.COLOR_BGR2GRAY)
         # cv2.imshow('hybird', hybrid_channel)
         # cv2.imshow('green', masked_out[:, :, 1])
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-        cl_img = clahe.apply(hybrid_channel)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cl1 = clahe.apply(gray)
         lookUpTable = np.empty((1, 256), np.uint8)
-        gamma = 0.4
+        gamma = 1.2
         for i in range(256):
             lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
-        res = cv2.LUT(cl_img, lookUpTable)
-        # cv2.imshow('clahe', cl_img)
+        res = cv2.LUT(cl1, lookUpTable)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 

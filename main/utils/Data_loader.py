@@ -54,8 +54,10 @@ class CustomDataLoader(Dataset):
         # ret, label = cv2.threshold(label, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         w, h = image[:, :, 0].shape
         if scale is not None and w!= h:
-            newW = int(scale * w)
-            newH = int(scale * w)
+            # newW = int(scale * w)
+            # newH = int(scale * w)
+            newW = int(512)
+            newH = int(512)
             assert newW > 0 and newH > 0, 'Scale is too small'
             image = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
             label = np.array(label)
@@ -88,24 +90,19 @@ class CustomDataLoader(Dataset):
         # cv2.imshow('green', masked_out[:, :, 1])
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-        gray = cv2.cvtColor(masked_out, cv2.COLOR_BGR2GRAY)
-        # cl1 = clahe.apply(gray)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cl1 = clahe.apply(gray)
         lookUpTable = np.empty((1, 256), np.uint8)
-        gamma = 1.4
+        gamma = 1.2
         for i in range(256):
             lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
-        res = cv2.LUT(gray, lookUpTable)
-        cl1 = clahe.apply(res)
-        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-        cl1 = cv2.subtract(mask, cl1)
-        cl1 = cv2.subtract(mask, cl1)
-
+        res = cv2.LUT(cl1, lookUpTable)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 
-        return cl1, label
+        return res, label
 
     def __getitem__(self, idx):
         """ Generator to yield a tuple of image and label

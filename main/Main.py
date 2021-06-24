@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import torch
-from evaluate import *
+#from .evaluate import *
 from main.Network.Unet_variant_1 import UnetVariant_1
 from main.utils.DataLoaderNoMask import CustomDataLoaderNoMask
 from main.utils.losses_pytorch.dice_loss import WeightedFocalLoss
@@ -19,15 +19,15 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from main.utils.losses_pytorch import dice_loss
 #
-img_dir = 'utils/DRIVE/training/images/img/'
-label_dir = 'utils/DRIVE/training/images/label/'
-mask_dir = 'utils/DRIVE/training/mask/'
+# img_dir = 'utils/DRIVE/training/images/img/'
+# label_dir = 'utils/DRIVE/training/images/label/'
+# mask_dir = 'utils/DRIVE/training/mask/'
 
-# img_dir = 'utils/CHASEDB1/train/img/'
-# label_dir = 'utils/CHASEDB1/train/1st_manual/'
-#
+img_dir = 'utils/CHASEDB1/train/img/'
+label_dir = 'utils/CHASEDB1/train/1st_manual/'
+# #
 # img_dir = 'utils/STARE/training/img/'
-# label_dir = 'utils/STARE/training/label-ah/'
+# label_dir = 'utils/STARE/training/label-vk/'
 val_percent = 0.2
 batch_size = 1
 width_out = 420
@@ -37,14 +37,14 @@ if not train_on_gpu:
     print('CUDA is not available..... training on CPU')
 else:
     print("CUDA is available..... training on GPU")
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 transform = A.Compose([
     A.HorizontalFlip(p=0.3),
     A.VerticalFlip(p=0.3),
     A.RandomRotate90(p=0.3),
     A.OneOf([A.ElasticTransform(p=0.5, alpha=90, sigma=120 * 0.05, alpha_affine=45 * 0.03),
              A.GridDistortion(p=0.5)], p=0.3),
-    A.CLAHE(p=0.3),
+    A.CLAHE(p=0),
     A.RandomBrightnessContrast(p=0),
     A.RandomGamma(p=0.3),
     A.Transpose(p=0.3)
@@ -54,23 +54,23 @@ transform = A.Compose([
 transform_label = transforms.Compose([transforms.ToTensor()
                                       ])
 
-dataset = CustomDataLoader(img_dir, label_dir, mask_dir, transform,
+dataset = CustomDataLoaderNoMask(img_dir, label_dir, transform,
                            transform_label=transform_label, image_scale=.5)
 n_val = int(len(dataset) * val_percent)
 n_train = int(len(dataset) - n_val)
 train, val = random_split(dataset, [n_train, n_val])
-train_loader = DataLoader(train, batch_size=10, shuffle=True, num_workers=0, pin_memory=False)
-val_loader = DataLoader(val, batch_size=10, shuffle=False, num_workers=0, pin_memory=False)
+train_loader = DataLoader(train, batch_size=3, shuffle=True, num_workers=0, pin_memory=False)
+val_loader = DataLoader(val, batch_size=3, shuffle=False, num_workers=0, pin_memory=False)
 #
-for img, label in (train_loader):
-    #img = img.detach().numpy()
-    n,c,h,w =(img.shape)
-    for i in range(n):
-        im = np.squeeze(img[i, :, :, :].numpy())
-        la = np.squeeze(label[i, :, :, :].numpy())
-        visualize(im, la)
+# for img, label in (train_loader):
+#     #img = img.detach().numpy()
+#     n,c,h,w =(img.shape)
+#     for i in range(n):
+#         im = np.squeeze(img[i, :, :, :].numpy())
+#         la = np.squeeze(label[i, :, :, :].numpy())
+#         visualize(im, la)
 
-# model = U_net.UNet()
+model = U_net.UNet(1, 1)
 # def parse_args():
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument('--deepsupervision', default=False)
@@ -81,9 +81,10 @@ for img, label in (train_loader):
 #     args = parser.parse_args()
 #
 #     return args
-model = UnetVariant_1(1, 1)
+#model = UnetVariant_1(1, 1)
 print(model)
-
+pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(pytorch_total_params)
 if train_on_gpu:
     print('Transferring model to GPU.....')
     model.to(device)
@@ -103,7 +104,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.003)
 
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=40, verbose=True)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0.003)
-no_epoch = 850
+no_epoch = 150
 valid_loss_min = np.inf
 val_loss_plot = []
 train_loss_plot = []
