@@ -15,7 +15,9 @@ DiluNET: Unet variant for segmentation
 ## Results:
  The proposed method achieved results with **accuracies: 0.9680, 0.9694, 0.9701; sensitivities: 0.8837, 0.8263, 0.8713 and IOUs: 0.8698, 0.7951, 0.8184 on three of the publicly available datasets of DIVE, STARE and CHASE respectively**.
  An ablation study is performed to show the contribution of each proposed module and technique.
- ![DiluNET vs Unet](https://github.com/snawarhussain/segmentationUnet/blob/master/Screenshot%202021-09-25%20145758.png)
+ ![DilUnet vs Unet](https://github.com/snawarhussain/segmentationUnet/blob/master/Screenshot%202021-09-25%20145758.png)
+ 
  
 ## Conclusion:
  The evaluation metrics revealed that the performance of the proposed method is higher than the original UNET and other UNET based architectures as well as many other state-of-the-art segmentation techniques.
+ ![DilUnet](https://github.com/snawarhussain/segmentationUnet/blob/master/Screenshot%202021-09-25%20145832.png)
