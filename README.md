@@ -1,5 +1,6 @@
-# segmentationUnet
+# DilUnet
 DiluNET: Unet variant for segmentation
+This repo is the official implementation of the paper " [DilUnet: A U-net based architecture for blood vessels segmentation] (https://doi.org/10.1016/j.cmpb.2022.106732)"
 
 ### Background and Objective:
  Retinal image segmentation can help clinicians detect pathological disorders by studying the change in retinal blood vessels.
@@ -21,3 +22,14 @@ DiluNET: Unet variant for segmentation
 ## Conclusion:
  The evaluation metrics revealed that the performance of the proposed method is higher than the original UNET and other UNET based architectures as well as many other state-of-the-art segmentation techniques.
  ![DilUnet](https://github.com/snawarhussain/segmentationUnet/blob/master/Screenshot%202021-09-25%20145832.png)
+
+If you find this code helpful please consider citing this work
+```
+@article{SnawarHussain2022,
+    title = {DilUnet: A U-net based architecture for blood vessels segmentation},
+    author = {Snawar Hussain and Fan Guo and Weiqing Li},
+    journal = {Computer Methods and Programs in Biomedicine},
+    year = {2022},
+    url = {https://doi.org/10.1016/j.cmpb.2022.106732}
+}
+```
