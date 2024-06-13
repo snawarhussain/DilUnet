@@ -79,7 +79,7 @@ class UNet(nn.Module):
         r"""Decoder"""
 
         x = self.ConvTrans1(x9)
-        y =   crop(x7,x)
+        y =   nn.functional.interpolate(x7,x.shape[2])
         x = self.upConv1(torch.cat((y,x),dim=1))
 
         x = self.ConvTrans2(x)
